@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './components/RequireAuth.js';
 import { ru } from './i18n/ru.js';
 import { AddEntryPage } from './routes/AddEntryPage.js';
+import { DataPage } from './routes/DataPage.js';
 import { EditEntryPage } from './routes/EditEntryPage.js';
 import { ExercisesPage } from './routes/ExercisesPage.js';
 import { HomePage } from './routes/HomePage.js';
@@ -31,6 +32,7 @@ const PROTECTED = [
   { path: '/exercises', element: <ExercisesPage /> },
   { path: '/programs', element: <ProgramsPage /> },
   { path: '/programs/:id', element: <ProgramEditPage /> },
+  { path: '/data', element: <DataPage /> },
 ];
 
 export function App() {

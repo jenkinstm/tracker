@@ -6,6 +6,7 @@
   "engines": {
     "node": ">=22"
   },
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -20,6 +21,7 @@
     "diary:check": "pnpm --filter @tracker/api diary:check",
     "weight:check": "pnpm --filter @tracker/api weight:check",
     "workout:check": "pnpm --filter @tracker/api workout:check",
+    "backup:check": "pnpm --filter @tracker/api backup:check",
     "db:studio": "pnpm --filter @tracker/api db:studio"
   },
   "devDependencies": {
