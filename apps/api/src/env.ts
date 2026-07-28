@@ -19,7 +19,9 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().refine(isBase64Key, 'ожидаются 32 случайных байта в base64'),
   TRUST_PROXY: z.enum(['true', 'false']).default('false'),
   COOKIE_SECURE: z.enum(['true', 'false']).optional(),
-  TZ: z.string().default('Europe/Amsterdam'),
+  // Совпадает с docs/context.md. Даты дневника всё равно считаются явно
+  // через Intl, но пусть логи и cron не разъезжаются с часовым поясом проекта.
+  TZ: z.string().default('Europe/Moscow'),
 });
 
 const parsed = envSchema.safeParse(process.env);

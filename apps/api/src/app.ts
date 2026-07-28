@@ -6,6 +6,9 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { env, isProduction } from './env.js';
 import { SESSION_TTL_SECONDS } from './lib/session.js';
 import { authRoutes } from './routes/auth.js';
+import { dailyRoutes } from './routes/daily.js';
+import { diaryRoutes } from './routes/diary.js';
+import { foodRoutes } from './routes/foods.js';
 import { healthRoutes } from './routes/health.js';
 import { profileRoutes } from './routes/profile.js';
 
@@ -39,6 +42,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(profileRoutes, { prefix: '/api/profile' });
+  await app.register(foodRoutes, { prefix: '/api/foods' });
+  await app.register(diaryRoutes, { prefix: '/api/diary' });
+  await app.register(dailyRoutes, { prefix: '/api/daily' });
 
   return app;
 }
