@@ -19,6 +19,7 @@
     "targets:check": "pnpm --filter @tracker/api targets:check",
     "diary:check": "pnpm --filter @tracker/api diary:check",
     "weight:check": "pnpm --filter @tracker/api weight:check",
+    "workout:check": "pnpm --filter @tracker/api workout:check",
     "db:studio": "pnpm --filter @tracker/api db:studio"
   },
   "devDependencies": {

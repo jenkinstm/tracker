@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { QuickWeight } from '../components/QuickWeight.js';
+import { StepsCounter } from '../components/StepsCounter.js';
 import { WaterCounter } from '../components/WaterCounter.js';
 import { ru } from '../i18n/ru.js';
 import { useDiaryDay } from '../lib/diary.js';
@@ -32,6 +33,8 @@ export function HomePage() {
           <Totals day={day} />
           <WeightCard stats={weight?.stats} />
           <WaterCounter date={date} glasses={day.water.glasses} target={day.water.target} />
+          <StepsCounter date={date} />
+          <WorkoutLink />
           <Entries day={day} />
         </>
       ) : (
@@ -123,6 +126,18 @@ function WeightCard({ stats }: { stats: WeightStats | undefined }) {
 
       <QuickWeight stats={stats} />
     </section>
+  );
+}
+
+/** Старт тренировки — второй тап после этой ссылки (критерий приёмки №3). */
+function WorkoutLink() {
+  return (
+    <Link
+      to="/workout"
+      className="flex min-h-11 items-center justify-center rounded border border-slate-300 text-sm"
+    >
+      {ru.workout.open}
+    </Link>
   );
 }
 

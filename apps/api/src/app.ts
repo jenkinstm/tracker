@@ -11,7 +11,10 @@ import { diaryRoutes } from './routes/diary.js';
 import { foodRoutes } from './routes/foods.js';
 import { healthRoutes } from './routes/health.js';
 import { profileRoutes } from './routes/profile.js';
+import { exerciseRoutes } from './routes/exercises.js';
+import { programRoutes } from './routes/programs.js';
 import { statsRoutes, weightRoutes } from './routes/weights.js';
+import { setRoutes, workoutRoutes } from './routes/workouts.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -48,6 +51,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(dailyRoutes, { prefix: '/api/daily' });
   await app.register(weightRoutes, { prefix: '/api/weights' });
   await app.register(statsRoutes, { prefix: '/api/stats' });
+  await app.register(exerciseRoutes, { prefix: '/api/exercises' });
+  await app.register(programRoutes, { prefix: '/api/programs' });
+  await app.register(workoutRoutes, { prefix: '/api/workouts' });
+  await app.register(setRoutes, { prefix: '/api/sets' });
 
   return app;
 }
