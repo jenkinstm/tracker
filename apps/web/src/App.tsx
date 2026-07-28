@@ -5,10 +5,14 @@ import { RequireAuth } from './components/RequireAuth.js';
 import { ru } from './i18n/ru.js';
 import { AddEntryPage } from './routes/AddEntryPage.js';
 import { EditEntryPage } from './routes/EditEntryPage.js';
+import { ExercisesPage } from './routes/ExercisesPage.js';
 import { HomePage } from './routes/HomePage.js';
 import { LoginPage } from './routes/LoginPage.js';
 import { NewFoodPage } from './routes/NewFoodPage.js';
 import { ProfilePage } from './routes/ProfilePage.js';
+import { ProgramEditPage } from './routes/ProgramEditPage.js';
+import { ProgramsPage } from './routes/ProgramsPage.js';
+import { WorkoutPage } from './routes/WorkoutPage.js';
 
 // Экран веса тянет за собой recharts — это больше сотни килобайт, которые
 // на главном экране не нужны. Отдельным чанком, чтобы не ломать NFR-2.
@@ -23,6 +27,10 @@ const PROTECTED = [
   { path: '/diary/:id', element: <EditEntryPage /> },
   { path: '/foods/new', element: <NewFoodPage /> },
   { path: '/weight', element: <WeightPage /> },
+  { path: '/workout', element: <WorkoutPage /> },
+  { path: '/exercises', element: <ExercisesPage /> },
+  { path: '/programs', element: <ProgramsPage /> },
+  { path: '/programs/:id', element: <ProgramEditPage /> },
 ];
 
 export function App() {
