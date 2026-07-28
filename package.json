@@ -16,6 +16,7 @@
     "db:deploy": "pnpm --filter @tracker/api db:deploy",
     "db:seed": "pnpm --filter @tracker/api db:seed",
     "seed:check": "pnpm --filter @tracker/api seed:check",
+    "targets:check": "pnpm --filter @tracker/api targets:check",
     "db:studio": "pnpm --filter @tracker/api db:studio"
   },
   "devDependencies": {

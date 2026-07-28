@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './components/RequireAuth.js';
 import { HomePage } from './routes/HomePage.js';
 import { LoginPage } from './routes/LoginPage.js';
+import { ProfilePage } from './routes/ProfilePage.js';
 
 export function App() {
   return (
@@ -13,6 +14,14 @@ export function App() {
         element={
           <RequireAuth>
             <HomePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <RequireAuth>
+            <ProfilePage />
           </RequireAuth>
         }
       />
