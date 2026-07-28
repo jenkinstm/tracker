@@ -13,6 +13,7 @@
     "db:seed": "tsx src/seed/index.ts",
     "seed:check": "tsx scripts/check-seed.ts",
     "targets:check": "tsx scripts/check-targets.ts",
+    "diary:check": "tsx scripts/check-diary.ts",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio"
   },
