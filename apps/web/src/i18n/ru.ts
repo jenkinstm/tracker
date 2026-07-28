@@ -144,6 +144,48 @@ export const ru = {
 
     saveError: 'Не удалось сохранить',
   },
+  weight: {
+    heading: 'Вес',
+    trend: 'Тренд',
+    latest: 'Последний замер',
+    noData: 'Взвесься — тренд появится с первого замера',
+    record: 'Записать вес',
+    save: 'Сохранить',
+    saving: 'Сохраняю…',
+    saveError: 'Не удалось сохранить',
+    kg: 'кг',
+    date: 'Дата',
+    open: 'График и история',
+
+    rate: 'Темп',
+    ratePerWeek: 'кг/нед',
+    rateNeedsData: 'Нужно минимум 4 замера за 3 недели',
+    corridorOk: 'В целевом коридоре 0.5–1.0 %',
+    corridorFast: 'Быстрее целевого коридора',
+    corridorSlow: 'Медленнее целевого коридора',
+
+    forecast: 'Прогноз',
+    forecastNote: 'экстраполяция при текущем темпе',
+    forecastReached: 'Цель достигнута',
+    forecastStalled: 'Вес стоит — прогноз не построить',
+    forecastWrongWay: 'Вес идёт в сторону от цели',
+    forecastNoData: 'Данных пока не хватает',
+    weeks: 'нед',
+
+    lost: 'Сброшено',
+    toGoal: 'До цели',
+    goal: 'Цель',
+
+    period30: '30 дней',
+    period90: '90 дней',
+    period365: 'Год',
+    periodAll: 'Всё время',
+
+    history: 'История',
+    historyEmpty: 'Замеров пока нет',
+    delete: 'Удалить',
+    deleteConfirm: 'Удалить замер?',
+  },
   common: {
     loading: 'Загрузка…',
     dash: '—',
