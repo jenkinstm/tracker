@@ -1,11 +1,14 @@
+import type { WeightStats } from '@tracker/shared';
 import { todayIso } from '@tracker/shared';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { QuickWeight } from '../components/QuickWeight.js';
 import { WaterCounter } from '../components/WaterCounter.js';
 import { ru } from '../i18n/ru.js';
 import { useDiaryDay } from '../lib/diary.js';
 import { useLogout } from '../lib/session.js';
+import { useWeightStats } from '../lib/weight.js';
 
 export function HomePage() {
   const logout = useLogout();
@@ -13,6 +16,7 @@ export function HomePage() {
   // на восток переносила бы ужин на завтра.
   const [date] = useState(() => todayIso());
   const { data: day } = useDiaryDay(date);
+  const { data: weight } = useWeightStats();
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-6 p-4 pb-24">
@@ -26,6 +30,7 @@ export function HomePage() {
       {day ? (
         <>
           <Totals day={day} />
+          <WeightCard stats={weight?.stats} />
           <WaterCounter date={date} glasses={day.water.glasses} target={day.water.target} />
           <Entries day={day} />
         </>
@@ -79,6 +84,44 @@ function Totals({ day }: { day: NonNullable<ReturnType<typeof useDiaryDay>['data
         <Macro label="У" eaten={totals.carb} left={remaining.carb} />
         <Macro label={ru.diary.sweets} eaten={sweetKcal} left={remaining.sweets} />
       </dl>
+    </section>
+  );
+}
+
+/**
+ * На главном показывается тренд, а не сырой замер (FR-4.2): утренняя цифра
+ * скачет на килограмм от соли и воды, и реагировать на неё бессмысленно.
+ */
+function WeightCard({ stats }: { stats: WeightStats | undefined }) {
+  return (
+    <section className="flex flex-col gap-2 rounded border border-slate-200 p-3">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          {ru.weight.heading}
+        </h2>
+        <Link to="/weight" className="min-h-11 py-3 text-sm underline">
+          {ru.weight.open}
+        </Link>
+      </div>
+
+      {stats?.trend === null || stats === undefined ? (
+        <p className="text-sm text-slate-500">{ru.weight.noData}</p>
+      ) : (
+        <div className="flex items-baseline gap-3">
+          <span className="text-2xl font-semibold tabular-nums">
+            {stats.trend?.toFixed(1)}
+            <span className="ml-1 text-sm font-normal text-slate-500">{ru.weight.kg}</span>
+          </span>
+          {stats.ratePerWeek !== null && (
+            <span className="text-sm tabular-nums text-slate-600">
+              {stats.ratePerWeek > 0 ? '+' : ''}
+              {stats.ratePerWeek.toFixed(2)} {ru.weight.ratePerWeek}
+            </span>
+          )}
+        </div>
+      )}
+
+      <QuickWeight stats={stats} />
     </section>
   );
 }
