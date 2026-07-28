@@ -1,0 +1,479 @@
+// Схема по разделу 5 ТЗ. Меняется только через `prisma migrate`.
+//
+// Однопользовательский режим, но user_id в таблицах сохранён — это ноль затрат
+// сейчас и снимает переписывание схемы, если понадобится второй аккаунт.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
+}
+
+// ─────────────────────────────────────────── перечисления
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+/// Коэффициенты к BMR: 1.2 / 1.375 / 1.55 / 1.725 / 1.9
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  HIGH
+  ATHLETE
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+enum FoodSource {
+  SEED
+  OWN
+  OFF
+}
+
+enum Equipment {
+  BARBELL
+  DUMBBELL
+  BAND
+  BODYWEIGHT
+  SANDBAG
+  FITBALL
+  HYPEREXTENSION
+  CARDIO
+  OTHER
+}
+
+enum MuscleGroup {
+  LEGS
+  GLUTES
+  BACK
+  CHEST
+  SHOULDERS
+  ARMS
+  CORE
+  FULL_BODY
+  CARDIO
+}
+
+enum ReminderKind {
+  WEIGH_IN
+  MEAL
+  WINDOW_CLOSE
+  WORKOUT
+}
+
+enum PhotoAngle {
+  FRONT
+  SIDE
+  BACK
+}
+
+// ─────────────────────────────────────────── пользователь и профиль
+
+/// Хеш пароля живёт в AUTH_PASSWORD_HASH (FR-1.0), в БД его нет.
+/// Таблица остаётся якорем для user_id во всех остальных.
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  profile       Profile?
+  foods         Food[]
+  recipes       Recipe[]
+  diaryEntries  DiaryEntry[]
+  mealTemplates MealTemplate[]
+  weights       Weight[]
+  measurements  Measurement[]
+  photos        Photo[]
+  exercises     Exercise[]
+  programs      Program[]
+  workouts      Workout[]
+  activities    Activity[]
+  daily         Daily[]
+  reminders     Reminder[]
+  pushSubs      PushSub[]
+
+  @@map("users")
+}
+
+model Profile {
+  userId String @id @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sex           Sex?
+  birthYear     Int?          @map("birth_year")
+  heightCm      Int?          @map("height_cm")
+  activityLevel ActivityLevel @default(LIGHT) @map("activity_level")
+
+  startWeight Float? @map("start_weight")
+  goalWeight  Float? @map("goal_weight")
+
+  // null = считаем по формуле, значение = ручное переопределение (FR-1.3)
+  kcalTarget    Int? @map("kcal_target")
+  proteinTarget Int? @map("protein_target")
+  fatTarget     Int? @map("fat_target")
+  carbTarget    Int? @map("carb_target")
+  sweetsBudget  Int? @map("sweets_budget")
+
+  windowStart String @default("12:00") @map("window_start") @db.VarChar(5)
+  windowEnd   String @default("20:00") @map("window_end") @db.VarChar(5)
+
+  stepsTarget Int @default(9000) @map("steps_target")
+  waterTarget Int @default(12) @map("water_target")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("profile")
+}
+
+// ─────────────────────────────────────────── продукты
+
+model Food {
+  id     String  @id @default(cuid())
+  userId String? @map("user_id") // null = сид
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name    String
+  brand   String?
+  barcode String?
+
+  kcal100    Float  @map("kcal_100")
+  protein100 Float  @map("protein_100")
+  fat100     Float  @map("fat_100")
+  carb100    Float  @map("carb_100")
+  fiber100   Float? @map("fiber_100")
+
+  defaultPortionG Float?     @map("default_portion_g")
+  isSweet         Boolean    @default(false) @map("is_sweet")
+  source          FoodSource @default(OWN)
+  offId           String?    @map("off_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  units        FoodUnit[]
+  diaryEntries DiaryEntry[]
+  recipeItems  RecipeItem[]
+
+  @@index([userId])
+  @@index([barcode])
+  // Нечёткий поиск по названию (FR-2.1, NFR-2)
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@map("foods")
+}
+
+/// «1 яйцо» = 55 г
+model FoodUnit {
+  id     String @id @default(cuid())
+  foodId String @map("food_id")
+  food   Food   @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
+  unitName String @map("unit_name")
+  grams    Float
+
+  @@unique([foodId, unitName])
+  @@map("food_units")
+}
+
+model Recipe {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  totalYieldG Float  @map("total_yield_g")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items        RecipeItem[]
+  diaryEntries DiaryEntry[]
+
+  @@index([userId])
+  @@map("recipes")
+}
+
+model RecipeItem {
+  id       String @id @default(cuid())
+  recipeId String @map("recipe_id")
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  foodId   String @map("food_id")
+  food     Food   @relation(fields: [foodId], references: [id], onDelete: Restrict)
+
+  grams Float
+
+  @@index([recipeId])
+  @@map("recipe_items")
+}
+
+// ─────────────────────────────────────────── дневник питания
+
+model DiaryEntry {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+  time String   @db.VarChar(5)
+
+  foodId   String? @map("food_id")
+  food     Food?   @relation(fields: [foodId], references: [id], onDelete: SetNull)
+  recipeId String? @map("recipe_id")
+  recipe   Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  // Снимок на момент записи: продукт могут переименовать или удалить,
+  // история от этого меняться не должна.
+  name    String
+  grams   Float?
+  kcal    Float
+  protein Float
+  fat     Float
+  carb    Float
+  isSweet Boolean @default(false) @map("is_sweet")
+
+  mealType   MealType? @map("meal_type")
+  isEstimate Boolean   @default(false) @map("is_estimate")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, date])
+  @@map("diary_entries")
+}
+
+model MealTemplate {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  itemsJson Json   @map("items_json")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("meal_templates")
+}
+
+// ─────────────────────────────────────────── вес и замеры
+
+/// PK по дате: одна запись в день, дубли невозможны на уровне БД (FR-4.1).
+model Weight {
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date DateTime @db.Date
+  kg   Float
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([userId, date])
+  @@map("weights")
+}
+
+model Measurement {
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date  DateTime @db.Date
+  waist Float?
+  chest Float?
+  hip   Float?
+  neck  Float?
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([userId, date])
+  @@map("measurements")
+}
+
+model Photo {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date  DateTime    @db.Date
+  path  String // файл на диске вне webroot (NFR-5)
+  angle PhotoAngle?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, date])
+  @@map("photos")
+}
+
+// ─────────────────────────────────────────── тренировки
+
+model Exercise {
+  id     String  @id @default(cuid())
+  userId String? @map("user_id") // null = сид
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  muscleGroup MuscleGroup @map("muscle_group")
+  equipment   Equipment
+  isCardio    Boolean     @default(false) @map("is_cardio")
+  restSec     Int         @default(90) @map("rest_sec")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  programItems ProgramItem[]
+  sets         WorkoutSet[]
+
+  @@index([userId])
+  @@map("exercises")
+}
+
+model Program {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items    ProgramItem[]
+  workouts Workout[]
+
+  @@index([userId])
+  @@map("programs")
+}
+
+model ProgramItem {
+  id         String   @id @default(cuid())
+  programId  String   @map("program_id")
+  program    Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  exerciseId String   @map("exercise_id")
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  order      Int
+  targetSets Int? @map("target_sets")
+  targetReps Int? @map("target_reps")
+
+  @@index([programId])
+  @@map("program_items")
+}
+
+model Workout {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date        DateTime @db.Date
+  programId   String?  @map("program_id")
+  program     Program? @relation(fields: [programId], references: [id], onDelete: SetNull)
+  note        String?
+  durationMin Int?     @map("duration_min")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  sets WorkoutSet[]
+
+  @@index([userId, date])
+  @@map("workouts")
+}
+
+model WorkoutSet {
+  id         String   @id @default(cuid())
+  workoutId  String   @map("workout_id")
+  workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exerciseId String   @map("exercise_id")
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  setIndex Int     @map("set_index")
+  weightKg Float?  @map("weight_kg") // null для упражнений с весом тела
+  reps     Int?
+  done     Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([workoutId])
+  // Предзаполнение прошлым разом (FR-5.4) и история упражнения (FR-5.6)
+  @@index([exerciseId, createdAt])
+  @@map("workout_sets")
+}
+
+// ─────────────────────────────────────────── прочая активность
+
+model Activity {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date        DateTime @db.Date
+  type        String // «бег», «футбол» — список открытый
+  durationMin Int      @map("duration_min")
+  intensity   Int? // 1–10
+  kcalEst     Int?     @map("kcal_est")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, date])
+  @@map("activities")
+}
+
+model Daily {
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date         DateTime @db.Date
+  steps        Int?
+  waterGlasses Int      @default(0) @map("water_glasses")
+  sleepH       Float?   @map("sleep_h")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([userId, date])
+  @@map("daily")
+}
+
+// ─────────────────────────────────────────── напоминания
+
+model Reminder {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  time    String       @db.VarChar(5)
+  kind    ReminderKind
+  text    String?
+  enabled Boolean      @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("reminders")
+}
+
+model PushSub {
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  endpoint String @unique
+  keysJson Json   @map("keys_json")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("push_subs")
+}
