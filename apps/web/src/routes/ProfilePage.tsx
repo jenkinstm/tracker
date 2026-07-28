@@ -133,9 +133,14 @@ export function ProfilePage() {
     <main className="mx-auto flex max-w-md flex-col gap-6 p-4 pb-24">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{ru.profile.heading}</h1>
-        <Link to="/" className="min-h-11 py-3 text-sm underline">
-          {ru.profile.back}
-        </Link>
+        <span className="flex gap-4">
+          <Link to="/data" className="min-h-11 py-3 text-sm underline">
+            {ru.data.open}
+          </Link>
+          <Link to="/" className="min-h-11 py-3 text-sm underline">
+            {ru.profile.back}
+          </Link>
+        </span>
       </header>
 
       <Summary computed={computed} missing={missing} weight={weight} />

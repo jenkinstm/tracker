@@ -81,6 +81,14 @@ export {
   type WeightUpsert,
 } from './weight.js';
 export {
+  BACKUP_VERSION,
+  backupCounts,
+  backupSchema,
+  isSupportedVersion,
+  totalRecords,
+  type Backup,
+} from './backup.js';
+export {
   DEFAULT_SET_COUNT,
   countDoneSets,
   duplicateLastSet,

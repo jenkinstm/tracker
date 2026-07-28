@@ -16,6 +16,7 @@
     "diary:check": "tsx scripts/check-diary.ts",
     "weight:check": "tsx scripts/check-weight.ts",
     "workout:check": "tsx scripts/check-workout.ts",
+    "backup:check": "tsx scripts/check-backup.ts",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio"
   },
@@ -23,6 +24,7 @@
     "@fastify/helmet": "^13.0.0",
     "@fastify/rate-limit": "^10.0.0",
     "@fastify/secure-session": "^8.0.0",
+    "@fastify/static": "^10.1.2",
     "@node-rs/argon2": "^2.0.0",
     "@prisma/client": "^6.0.0",
     "@tracker/shared": "workspace:*",

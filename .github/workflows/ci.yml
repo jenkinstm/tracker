@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    # Тесты расчётов базы не требуют, но проверки сидов и типов Prisma —
+    # требуют сгенерированного клиента, а он хочет схему.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tracker
+          POSTGRES_PASSWORD: tracker
+          POSTGRES_DB: tracker
+        options: >-
+          --health-cmd "pg_isready -U tracker"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: postgresql://tracker:tracker@localhost:5432/tracker
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @tracker/api exec prisma generate
+
+      - name: Типы
+        run: pnpm typecheck
+
+      - name: Тесты
+        run: pnpm test
+
+      - name: Миграции применяются на чистой базе
+        run: pnpm --filter @tracker/api exec prisma migrate deploy
+
+      - name: Сид заливается
+        run: pnpm --filter @tracker/api db:seed
+
+      # Проверки приёмки гоняются на живой базе — они и есть настоящая
+      # защита от регрессий в блоках 2–7.
+      - name: Проверки приёмки
+        run: |
+          pnpm --filter @tracker/api seed:check
+          pnpm --filter @tracker/api targets:check
+          pnpm --filter @tracker/api diary:check
+          pnpm --filter @tracker/api weight:check
+          pnpm --filter @tracker/api workout:check
+          pnpm --filter @tracker/api backup:check
+
+      - name: Сборка фронта
+        run: pnpm --filter @tracker/web build
