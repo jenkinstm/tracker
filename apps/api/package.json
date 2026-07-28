@@ -10,6 +10,8 @@
     "hash-password": "tsx scripts/hash-password.ts",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx src/seed/index.ts",
+    "seed:check": "tsx scripts/check-seed.ts",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio"
   },

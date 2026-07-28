@@ -44,6 +44,7 @@ services:
       sh -c "pnpm install &&
              pnpm --filter @tracker/api exec prisma generate &&
              pnpm --filter @tracker/api exec prisma migrate deploy &&
+             pnpm --filter @tracker/api db:seed &&
              pnpm --filter @tracker/api dev"
     healthcheck:
       test:
