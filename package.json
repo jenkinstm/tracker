@@ -14,6 +14,8 @@
     "hash-password": "pnpm --filter @tracker/api hash-password",
     "db:migrate": "pnpm --filter @tracker/api db:migrate",
     "db:deploy": "pnpm --filter @tracker/api db:deploy",
+    "db:seed": "pnpm --filter @tracker/api db:seed",
+    "seed:check": "pnpm --filter @tracker/api seed:check",
     "db:studio": "pnpm --filter @tracker/api db:studio"
   },
   "devDependencies": {
