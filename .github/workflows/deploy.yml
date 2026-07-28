@@ -72,7 +72,13 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
 
             # Бэкап перед выкаткой: миграция может оказаться необратимой.
-            ./scripts/backup.sh
+            # На первом деплое прод-базы ещё нет — снимать нечего, и падать
+            # из-за этого нельзя, иначе выкатка не состоится ни разу.
+            if docker compose -f docker-compose.prod.yml ps --status running --services 2>/dev/null | grep -qx db; then
+              ./scripts/backup.sh
+            else
+              echo "прод-база не запущена — первый деплой, бэкап пропускаю"
+            fi
 
             git fetch --all
             git reset --hard origin/main
