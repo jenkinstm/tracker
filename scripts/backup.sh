@@ -15,7 +15,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-RETENTION_DAYS="${RETENTION_DAYS:-30}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 
@@ -24,11 +23,24 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-# Имена базы и пользователя берём из .env, чтобы не разъезжаться с DATABASE_URL.
-set -a
-# shellcheck disable=SC1091
-. ./.env
-set +a
+# .env читается по одному ключу, а не через `source`: это файл формата
+# docker compose, и значения с пробелами (OFF_USER_AGENT) при исполнении
+# оболочкой превращаются в команды. Кавычки вокруг значения снимаем сами.
+read_env() {
+  grep -E "^$1=" .env | tail -n 1 | cut -d= -f2- \
+    | sed -e "s/^'//" -e "s/'\$//" -e 's/^"//' -e 's/"$//'
+}
+
+POSTGRES_USER="$(read_env POSTGRES_USER)"
+POSTGRES_DB="$(read_env POSTGRES_DB)"
+RETENTION_DAYS="${RETENTION_DAYS:-$(read_env RETENTION_DAYS)}"
+RETENTION_DAYS="${RETENTION_DAYS:-30}"
+BACKUP_REMOTE="${BACKUP_REMOTE:-$(read_env BACKUP_REMOTE)}"
+
+# Без этих переменных pg_dump молча сходит к пользователю по умолчанию
+# и выдаст дамп не той базы — или пустой. Лучше упасть здесь.
+: "${POSTGRES_USER:?нет в .env — pg_dump не будет знать, под кем подключаться}"
+: "${POSTGRES_DB:?нет в .env — pg_dump не будет знать, какую базу снимать}"
 
 mkdir -p "$BACKUP_DIR"
 

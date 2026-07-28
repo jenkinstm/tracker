@@ -6,7 +6,7 @@
 ## Как устроено
 
 ```
-GitHub Actions ──build──> ghcr.io/<owner>/tracker:<sha>
+GitHub Actions ──build──> ghcr.io/jenkinstm/tracker:<sha>
                               │
                               ▼ docker compose pull
                          сервер fit.profkosm.ru
@@ -41,7 +41,7 @@ git clone <репозиторий> ~/tracker && cd ~/tracker
 | `AUTH_PASSWORD_HASH` | `pnpm hash-password`, argon2id |
 | `SESSION_SECRET` | 32 случайных байта в base64, тот же скрипт |
 | `PUBLIC_DOMAIN` | `fit.profkosm.ru` — по нему Caddy получит сертификат |
-| `APP_IMAGE` | `ghcr.io/<owner>/tracker:latest` |
+| `APP_IMAGE` | `ghcr.io/jenkinstm/tracker:latest` |
 
 > Значения с `$` пишутся **в одинарных кавычках**: Docker Compose
 > интерполирует `.env`, и argon2id-хеш без кавычек приезжает выпотрошенным.
@@ -86,7 +86,7 @@ Let's Encrypt проверяет домен, и без записи сертиф
 Теги образов — по SHA коммита, поэтому откат это выбор прошлого тега:
 
 ```bash
-APP_IMAGE=ghcr.io/<owner>/tracker:<прошлый-sha> \
+APP_IMAGE=ghcr.io/jenkinstm/tracker:<прошлый-sha> \
   docker compose -f docker-compose.prod.yml up -d app
 ```
 

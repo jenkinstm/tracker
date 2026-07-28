@@ -28,10 +28,18 @@ if [ -z "$DUMP" ] || [ ! -f "$DUMP" ]; then
   exit 1
 fi
 
-set -a
-# shellcheck disable=SC1091
-. ./.env
-set +a
+# Читаем по ключу, а не через `source`: .env — файл docker compose,
+# и значения с пробелами при исполнении оболочкой станут командами.
+read_env() {
+  grep -E "^$1=" .env | tail -n 1 | cut -d= -f2- \
+    | sed -e "s/^'//" -e "s/'\$//" -e 's/^"//' -e 's/"$//'
+}
+
+POSTGRES_USER="$(read_env POSTGRES_USER)"
+POSTGRES_DB="$(read_env POSTGRES_DB)"
+
+: "${POSTGRES_USER:?нет в .env — psql не будет знать, под кем подключаться}"
+: "${POSTGRES_DB:?нет в .env — psql не будет знать, в какую базу заливать}"
 
 echo "Восстановление из $DUMP в базу $POSTGRES_DB."
 echo "Текущее содержимое базы будет ЗАМЕЩЕНО."
