@@ -7,6 +7,7 @@ import { env, isProduction } from './env.js';
 import { SESSION_TTL_SECONDS } from './lib/session.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
+import { profileRoutes } from './routes/profile.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -37,6 +38,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(authRoutes, { prefix: '/api/auth' });
+  await app.register(profileRoutes, { prefix: '/api/profile' });
 
   return app;
 }

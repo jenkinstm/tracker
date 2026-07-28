@@ -30,6 +30,12 @@ enum ActivityLevel {
   ATHLETE
 }
 
+/// Дефицит задаётся либо процентом от TDEE, либо абсолютным числом ккал (FR-1.2).
+enum DeficitMode {
+  PERCENT
+  KCAL
+}
+
 enum MealType {
   BREAKFAST
   LUNCH
@@ -118,6 +124,15 @@ model Profile {
 
   startWeight Float? @map("start_weight")
   goalWeight  Float? @map("goal_weight")
+
+  // Дефицит к TDEE (FR-1.2). Процент по умолчанию: он сам подстраивается
+  // под падающий по мере похудения TDEE, в отличие от фиксированных ккал.
+  deficitMode  DeficitMode @default(PERCENT) @map("deficit_mode")
+  deficitValue Float       @default(20) @map("deficit_value")
+
+  // Белок и жир на килограмм целевого веса (FR-1.4). null = дефолт из shared.
+  proteinPerKg Float? @map("protein_per_kg")
+  fatPerKg     Float? @map("fat_per_kg")
 
   // null = считаем по формуле, значение = ручное переопределение (FR-1.3)
   kcalTarget    Int? @map("kcal_target")

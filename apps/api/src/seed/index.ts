@@ -2,6 +2,7 @@ import { prisma } from '../db.js';
 import { getSingleUser } from '../lib/user.js';
 import { exercises } from './exercises.js';
 import { foods } from './foods.js';
+import { seedProfileDefaults } from './profile.js';
 import { programs } from './programs.js';
 import { seedExerciseSchema, seedFoodSchema, seedId, seedProgramSchema } from './types.js';
 
@@ -134,10 +135,16 @@ async function main() {
   const f = await seedFoods();
   const e = await seedExercises();
   const p = await seedPrograms(user.id);
+  const filled = await seedProfileDefaults(user.id);
 
   console.log(`Продукты:   ${f.upserted} записано, ${f.removed} устаревших удалено`);
   console.log(`Упражнения: ${e.upserted} записано, ${e.removed} устаревших удалено`);
   console.log(`Программы:  ${p.upserted} записано`);
+  console.log(
+    filled.length > 0
+      ? `Профиль:    дефолты проставлены в ${filled.join(', ')}`
+      : 'Профиль:    заполнен, дефолты не трогались',
+  );
 }
 
 main()
