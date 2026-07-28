@@ -292,7 +292,7 @@ AUTH_PASSWORD_HASH=$argon2id$...
 SESSION_SECRET=***
 VAPID_PUBLIC_KEY=  VAPID_PRIVATE_KEY=  VAPID_SUBJECT=mailto:...
 OFF_USER_AGENT=fit.profkosm.ru - personal tracker
-TZ=Europe/Amsterdam
+TZ=Europe/Moscow
 ```
 
 Файл `.env` — только на сервере, в `.gitignore`. В репозитории лежит `.env.example` с пустыми значениями.

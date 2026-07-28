@@ -7,17 +7,16 @@ services:
     # Значения с $ (argon2id-хеш) обязаны быть в .env в одинарных кавычках:
     # иначе compose интерполирует их и подставляет пустоту. `format: raw`
     # тут не годится — он оставил бы сами кавычки внутри значения.
+    # POSTGRES_USER / POSTGRES_DB приходят из .env: держать их ещё и здесь
+    # значило бы два источника правды, расходящихся с DATABASE_URL.
     env_file: [.env]
-    environment:
-      POSTGRES_DB: tracker
-      POSTGRES_USER: tracker
     # Только expose: ufw не фильтрует порты, опубликованные докером,
     # и `ports:` выставил бы базу в интернет.
     expose: ['5432']
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U tracker -d tracker']
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 5s
       timeout: 5s
       retries: 30
