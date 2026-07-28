@@ -1,0 +1,26 @@
+{
+  "name": "tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r build",
+    "hash-password": "pnpm --filter @tracker/api hash-password",
+    "db:migrate": "pnpm --filter @tracker/api db:migrate",
+    "db:deploy": "pnpm --filter @tracker/api db:deploy",
+    "db:studio": "pnpm --filter @tracker/api db:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "esbuild", "prisma"]
+  }
+}

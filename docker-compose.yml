@@ -1,0 +1,82 @@
+name: tracker
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    # Значения с $ (argon2id-хеш) обязаны быть в .env в одинарных кавычках:
+    # иначе compose интерполирует их и подставляет пустоту. `format: raw`
+    # тут не годится — он оставил бы сами кавычки внутри значения.
+    # POSTGRES_USER / POSTGRES_DB приходят из .env: держать их ещё и здесь
+    # значило бы два источника правды, расходящихся с DATABASE_URL.
+    env_file: [.env]
+    # Только expose: ufw не фильтрует порты, опубликованные докером,
+    # и `ports:` выставил бы базу в интернет.
+    expose: ['5432']
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/dev.Dockerfile
+    restart: unless-stopped
+    # Значения с $ (argon2id-хеш) обязаны быть в .env в одинарных кавычках:
+    # иначе compose интерполирует их и подставляет пустоту. `format: raw`
+    # тут не годится — он оставил бы сами кавычки внутри значения.
+    env_file: [.env]
+    environment:
+      NODE_ENV: development
+      PORT: '3000'
+    volumes:
+      - .:/app
+      - pnpm-store:/pnpm-store
+    expose: ['3000']
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "pnpm install &&
+             pnpm --filter @tracker/api exec prisma generate &&
+             pnpm --filter @tracker/api exec prisma migrate deploy &&
+             pnpm --filter @tracker/api dev"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/dev.Dockerfile
+    restart: unless-stopped
+    # Значения с $ (argon2id-хеш) обязаны быть в .env в одинарных кавычках:
+    # иначе compose интерполирует их и подставляет пустоту. `format: raw`
+    # тут не годится — он оставил бы сами кавычки внутри значения.
+    env_file: [.env]
+    environment:
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - pnpm-store:/pnpm-store
+    ports:
+      - '5173:5173'
+    depends_on:
+      api:
+        condition: service_healthy
+    command: pnpm --filter @tracker/web dev
+
+volumes:
+  pgdata:
+  pnpm-store:
