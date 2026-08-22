@@ -13,6 +13,8 @@
 set -eu
 
 PREFIX="${PREFIX:-/usr/local}"
+PAPPL_BRANCH="${PAPPL_BRANCH:-v1.4.x}"
+PAPPL_BUILD_DIR="${TMPDIR:-/tmp}/pappl-build"
 PORT="${PORT:-8631}"
 QUEUE="${QUEUE:-HP_LaserJet_P2055}"
 PRINTER="${PRINTER:-p2055}"
@@ -37,20 +39,27 @@ log "Проверяю инструменты сборки"
 xcode-select -p >/dev/null 2>&1 || die "нет Command Line Tools, выполните: xcode-select --install"
 
 log "Проверяю библиотеку PAPPL"
-if ! pkg-config --exists pappl 2>/dev/null; then
-  if command -v brew >/dev/null 2>&1 && brew install pappl >/dev/null 2>&1; then
-    log "PAPPL установлена через Homebrew"
-  else
-    log "Собираю PAPPL из исходников в /tmp/pappl-build"
-    rm -rf /tmp/pappl-build
-    git clone --depth 1 https://github.com/michaelrsweet/pappl.git /tmp/pappl-build
-    (cd /tmp/pappl-build && ./configure --prefix="$PREFIX" && make && sudo make install)
-  fi
+if pkg-config --exists pappl 2>/dev/null; then
+  log "PAPPL уже установлена, версия $(pkg-config --modversion pappl)"
+elif [ -f "$PREFIX/include/pappl/pappl.h" ]; then
+  log "PAPPL уже установлена в $PREFIX"
+else
+  # Ветка master требует CUPS 2.5 или libcups3, а macOS даёт CUPS 2.x —
+  # configure там падает с "requires libcups2-dev>=2.5 or libcups3-dev".
+  # Ветка v1.4.x работает с CUPS 2.2+ через cups-config, который есть в системе.
+  command -v cups-config >/dev/null 2>&1 ||
+    die "в системе нет cups-config; поставьте Command Line Tools (xcode-select --install)"
+
+  log "Собираю PAPPL ($PAPPL_BRANCH) из исходников в $PAPPL_BUILD_DIR"
+  rm -rf "$PAPPL_BUILD_DIR"
+  git clone --depth 1 --branch "$PAPPL_BRANCH" https://github.com/michaelrsweet/pappl.git "$PAPPL_BUILD_DIR"
+  (cd "$PAPPL_BUILD_DIR" && ./configure --prefix="$PREFIX" && make)
+  sudo make -C "$PAPPL_BUILD_DIR" install
 fi
 
 log "Собираю драйвер"
 make -C "$SRC_DIR" test
-make -C "$SRC_DIR" app
+make -C "$SRC_DIR" app PAPPL_PREFIX="$PREFIX"
 
 log "Устанавливаю в $PREFIX/bin"
 sudo make -C "$SRC_DIR" install PREFIX="$PREFIX"

@@ -11,9 +11,12 @@
 
 #include <pappl/pappl.h>
 
+#include <errno.h>
+#include <fcntl.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "p2055_pcl.h"
 
@@ -111,6 +114,7 @@ static bool p2055_callback(pappl_system_t *system, const char *driver_name,
                            const char *device_uri, const char *device_id,
                            pappl_pr_driver_data_t *driver_data, ipp_t **driver_attrs,
                            void *data);
+static bool p2055_print_raw(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
 static bool p2055_rendjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
 static bool p2055_rendpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device,
                            unsigned page);
@@ -214,6 +218,7 @@ p2055_callback(pappl_system_t *system, const char *driver_name, const char *devi
   driver_data->rstartjob_cb  = p2055_rstartjob;
   driver_data->rstartpage_cb = p2055_rstartpage;
   driver_data->rwriteline_cb = p2055_rwriteline;
+  driver_data->printfile_cb  = p2055_print_raw;
   driver_data->status_cb     = p2055_status;
   driver_data->has_supplies  = true;
   driver_data->format        = "application/vnd.hp-pcl";
@@ -286,6 +291,54 @@ p2055_callback(pappl_system_t *system, const char *driver_name, const char *devi
   }
 
   driver_data->media_default = driver_data->media_ready[0];
+
+  return (true);
+}
+
+
+/*
+ * Готовый PCL (например, вывод rastertop2055) уходит на принтер как есть.
+ * Без этого колбэка PAPPL 1.4 бракует драйвер: объявленный format обязывает
+ * уметь печатать файлы этого типа напрямую.
+ */
+
+static bool
+p2055_print_raw(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device)
+{
+  int     fd;
+  ssize_t bytes;
+  char    buffer[65536];
+
+  (void)options;
+
+  papplJobSetImpressions(job, 1);
+
+  if ((fd = open(papplJobGetFilename(job), O_RDONLY)) < 0)
+  {
+    papplLogJob(job, PAPPL_LOGLEVEL_ERROR, "Не удалось открыть файл задания: %s", strerror(errno));
+    return (false);
+  }
+
+  while ((bytes = read(fd, buffer, sizeof(buffer))) > 0)
+  {
+    if (papplDeviceWrite(device, buffer, (size_t)bytes) < 0)
+    {
+      papplLogJob(job, PAPPL_LOGLEVEL_ERROR, "Обрыв записи в принтер.");
+      close(fd);
+      return (false);
+    }
+  }
+
+  close(fd);
+  papplDeviceFlush(device);
+
+  if (bytes < 0)
+  {
+    papplLogJob(job, PAPPL_LOGLEVEL_ERROR, "Не удалось дочитать файл задания.");
+    return (false);
+  }
+
+  papplJobSetImpressionsCompleted(job, 1);
 
   return (true);
 }

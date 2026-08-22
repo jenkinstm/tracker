@@ -14,8 +14,20 @@ WARNINGS  = -Wall -Wextra -Werror -Wno-unused-parameter
 STD       = -std=c99
 PREFIX   ?= /usr/local
 
-PAPPL_CFLAGS ?= $(shell pkg-config --cflags pappl 2>/dev/null)
-PAPPL_LIBS   ?= $(shell pkg-config --libs pappl 2>/dev/null || echo -lpappl)
+# PAPPL ищем через pkg-config; на macOS его обычно нет, поэтому есть запасной
+# путь по префиксу установки (Homebrew или /usr/local).
+PKGCONFIG     ?= pkg-config
+HAVE_PAPPL_PC := $(shell $(PKGCONFIG) --exists pappl 2>/dev/null && echo yes)
+PAPPL_PREFIX  ?= $(shell brew --prefix 2>/dev/null || echo /usr/local)
+
+ifeq ($(HAVE_PAPPL_PC),yes)
+PAPPL_CFLAGS ?= $(shell $(PKGCONFIG) --cflags pappl)
+PAPPL_LIBS   ?= $(shell $(PKGCONFIG) --libs pappl)
+else
+PAPPL_CFLAGS ?= -I$(PAPPL_PREFIX)/include
+PAPPL_LIBS   ?= -L$(PAPPL_PREFIX)/lib -lpappl
+endif
+
 CUPS_CFLAGS  ?= $(shell cups-config --cflags 2>/dev/null)
 CUPS_LIBS    ?= $(shell cups-config --libs 2>/dev/null || echo -lcups)
 

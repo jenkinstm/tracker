@@ -38,6 +38,24 @@ cd drivers/hp-p2055-macos
 
 Сборка нативная под arm64, Rosetta не нужна.
 
+### Требования и подводный камень с PAPPL
+
+Драйверу нужна библиотека PAPPL. Если её нет, скрипт собирает её сам — но
+строго из ветки **v1.4.x**. Ветка `master` (будущая PAPPL 2.0) требует CUPS 2.5
+или libcups3, которых в macOS нет, и её `configure` падает так:
+
+```
+configure: error: Sorry, this software requires libcups2-dev>=2.5 or libcups3-dev.
+```
+
+PAPPL 1.4.x собирается с CUPS 2.2+ через `cups-config` из Command Line Tools —
+это то, что стоит на маке. Если PAPPL уже установлена (Homebrew или своя
+сборка), скрипт возьмёт её и ничего собирать не станет. Версию ветки можно
+переопределить: `PAPPL_BRANCH=v1.3.x ./scripts/install-macos.sh ...`.
+
+`pkg-config` на маке обычно отсутствует, поэтому `make app` умеет искать PAPPL
+по префиксу установки: `make app PAPPL_PREFIX=/opt/homebrew`.
+
 ## Из чего состоит
 
 | Файл | Назначение |
@@ -115,9 +133,13 @@ lpadmin -p P2055 -E -v socket://192.168.1.50 -P ppd/HP-LaserJet-P2055.ppd
 Проверено:
 
 * ядро PCL — 1310 проверок, включая полный цикл «растр → PCL → растр»;
-* printer application собран с PAPPL 1.3.1 и прогнан end-to-end: PNG →
+* printer application собран с PAPPL 1.3.1 и 1.4.13 и прогнан end-to-end: PNG →
   PWG-растр → PCL, поток принят виртуальным JetDirect-приёмником, разобран
   обратно и совпал с исходным изображением;
+* печать готового файла PCL напрямую (`-o document-format=application/vnd.hp-pcl`)
+  — на принтер уходит побайтово тот же файл;
+* сборка PAPPL 1.4.13 из ветки v1.4.x с CUPS 2.4 — тот путь, которым идёт
+  скрипт установки;
 * CUPS-фильтр прогнан на двухстраничном дуплексном задании из растра CUPS;
 * PPD проходит `cupstestppd` без замечаний.
 
