@@ -50,10 +50,29 @@ else
   command -v cups-config >/dev/null 2>&1 ||
     die "в системе нет cups-config; поставьте Command Line Tools (xcode-select --install)"
 
+  # PAPPL ищет TLS только через pkg-config, а в macOS нет ни pkg-config, ни
+  # заголовков OpenSSL — без них configure падает с "TLS support is required".
+  command -v brew >/dev/null 2>&1 ||
+    die "для сборки PAPPL нужен Homebrew (https://brew.sh): он даёт pkg-config и OpenSSL"
+
+  if ! command -v pkg-config >/dev/null 2>&1; then
+    log "Ставлю pkg-config"
+    brew install pkgconf || brew install pkg-config
+  fi
+
+  if ! brew list openssl@3 >/dev/null 2>&1; then
+    log "Ставлю OpenSSL"
+    brew install openssl@3
+  fi
+
+  # openssl@3 в Homebrew keg-only, его pkgconfig не лежит в путях по умолчанию.
+  PKG_CONFIG_PATH="$(brew --prefix openssl@3)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+  export PKG_CONFIG_PATH
+
   log "Собираю PAPPL ($PAPPL_BRANCH) из исходников в $PAPPL_BUILD_DIR"
   rm -rf "$PAPPL_BUILD_DIR"
   git clone --depth 1 --branch "$PAPPL_BRANCH" https://github.com/michaelrsweet/pappl.git "$PAPPL_BUILD_DIR"
-  (cd "$PAPPL_BUILD_DIR" && ./configure --prefix="$PREFIX" && make)
+  (cd "$PAPPL_BUILD_DIR" && ./configure --prefix="$PREFIX" --with-tls=openssl && make)
   sudo make -C "$PAPPL_BUILD_DIR" install
 fi
 

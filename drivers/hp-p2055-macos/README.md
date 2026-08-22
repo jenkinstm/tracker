@@ -53,6 +53,26 @@ PAPPL 1.4.x собирается с CUPS 2.2+ через `cups-config` из Comm
 сборка), скрипт возьмёт её и ничего собирать не станет. Версию ветки можно
 переопределить: `PAPPL_BRANCH=v1.3.x ./scripts/install-macos.sh ...`.
 
+Вторая мина там же:
+
+```
+configure: error: TLS support is required.
+```
+
+PAPPL ищет OpenSSL или GnuTLS **только через pkg-config**, а в macOS нет ни
+pkg-config, ни заголовков OpenSSL — обе проверки молча пропускаются, и сборка
+останавливается. Скрипт ставит недостающее сам; вручную это выглядит так:
+
+```sh
+brew install pkgconf openssl@3
+export PKG_CONFIG_PATH="$(brew --prefix openssl@3)/lib/pkgconfig:$PKG_CONFIG_PATH"
+./configure --prefix=/usr/local --with-tls=openssl && make && sudo make install
+```
+
+`openssl@3` в Homebrew keg-only, поэтому без `PKG_CONFIG_PATH` его не видно.
+Homebrew для этого шага обязателен — своей библиотеки TLS с pkg-config-описанием
+macOS не даёт.
+
 `pkg-config` на маке обычно отсутствует, поэтому `make app` умеет искать PAPPL
 по префиксу установки: `make app PAPPL_PREFIX=/opt/homebrew`.
 
@@ -139,7 +159,10 @@ lpadmin -p P2055 -E -v socket://192.168.1.50 -P ppd/HP-LaserJet-P2055.ppd
 * печать готового файла PCL напрямую (`-o document-format=application/vnd.hp-pcl`)
   — на принтер уходит побайтово тот же файл;
 * сборка PAPPL 1.4.13 из ветки v1.4.x с CUPS 2.4 — тот путь, которым идёт
-  скрипт установки;
+  скрипт установки; отдельно воспроизведены обе ошибки macOS-сборки (ветка
+  master и отсутствие pkg-config) и проверено, что `--with-tls=openssl` с
+  `PKG_CONFIG_PATH` на openssl конфигурируется, когда CUPS виден только через
+  `cups-config` — то есть ровно как на маке;
 * CUPS-фильтр прогнан на двухстраничном дуплексном задании из растра CUPS;
 * PPD проходит `cupstestppd` без замечаний.
 
