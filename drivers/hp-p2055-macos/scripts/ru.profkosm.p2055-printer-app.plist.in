@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>ru.profkosm.p2055-printer-app</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>@PREFIX@/bin/p2055-printer-app</string>
+		<string>server</string>
+		<string>-o</string>
+		<string>server-port=@PORT@</string>
+		<string>-o</string>
+		<string>spool-directory=@HOME@/Library/Application Support/p2055-printer-app</string>
+		<string>-o</string>
+		<string>log-file=@HOME@/Library/Logs/p2055-printer-app.log</string>
+		<string>-o</string>
+		<string>log-level=info</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>StandardErrorPath</key>
+	<string>@HOME@/Library/Logs/p2055-printer-app.err</string>
+</dict>
+</plist>
