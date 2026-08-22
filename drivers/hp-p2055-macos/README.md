@@ -73,6 +73,29 @@ export PKG_CONFIG_PATH="$(brew --prefix openssl@3)/lib/pkgconfig:$PKG_CONFIG_PAT
 Homebrew для этого шага обязателен — своей библиотеки TLS с pkg-config-описанием
 macOS не даёт.
 
+И третья, уже на линковке:
+
+```
+ld: warning: ignoring file '/opt/homebrew/.../libssl.dylib':
+    found architecture 'arm64', required architecture 'x86_64'
+Undefined symbols for architecture x86_64
+```
+
+PAPPL на macOS 11+ по умолчанию собирается universal (`-arch x86_64 -arch arm64`),
+а Homebrew ставит библиотеки только под архитектуру машины — срез x86_64 линковать
+нечем. Явный `-arch` в `CFLAGS`/`LDFLAGS` отключает universal-режим:
+
+```sh
+./configure --prefix=/usr/local --with-tls=openssl \
+            CFLAGS="-arch arm64" LDFLAGS="-arch arm64"
+```
+
+Скрипт берёт архитектуру у самой библиотеки Homebrew (`lipo -archs`), а не у
+`uname -m`: под Rosetta тот покажет x86_64 и сборка снова не сойдётся. Драйвер
+собирается так же — `make app ARCH=arm64`, и на маке `make` дополнительно
+вырезает `-arch` из флагов `cups-config`, которые Apple тоже отдаёт
+universal-набором.
+
 `pkg-config` на маке обычно отсутствует, поэтому `make app` умеет искать PAPPL
 по префиксу установки: `make app PAPPL_PREFIX=/opt/homebrew`.
 
@@ -162,7 +185,9 @@ lpadmin -p P2055 -E -v socket://192.168.1.50 -P ppd/HP-LaserJet-P2055.ppd
   скрипт установки; отдельно воспроизведены обе ошибки macOS-сборки (ветка
   master и отсутствие pkg-config) и проверено, что `--with-tls=openssl` с
   `PKG_CONFIG_PATH` на openssl конфигурируется, когда CUPS виден только через
-  `cups-config` — то есть ровно как на маке;
+  `cups-config` — то есть ровно как на маке; проверено и то, что PAPPL
+  переносит `CFLAGS`/`LDFLAGS` из `configure` в сборку — на этом держится
+  отключение universal-режима;
 * CUPS-фильтр прогнан на двухстраничном дуплексном задании из растра CUPS;
 * PPD проходит `cupstestppd` без замечаний.
 

@@ -15,6 +15,7 @@ set -eu
 PREFIX="${PREFIX:-/usr/local}"
 PAPPL_BRANCH="${PAPPL_BRANCH:-v1.4.x}"
 PAPPL_BUILD_DIR="${TMPDIR:-/tmp}/pappl-build"
+ARCH=""  # определяется при сборке PAPPL, см. ниже
 PORT="${PORT:-8631}"
 QUEUE="${QUEUE:-HP_LaserJet_P2055}"
 PRINTER="${PRINTER:-p2055}"
@@ -69,16 +70,28 @@ else
   PKG_CONFIG_PATH="$(brew --prefix openssl@3)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
   export PKG_CONFIG_PATH
 
+  # PAPPL на macOS 11+ по умолчанию собирается universal (x86_64 + arm64), а
+  # библиотеки Homebrew есть только под архитектуру машины — срез x86_64 не
+  # линкуется («ignoring file ... required architecture x86_64»). Явный -arch
+  # отключает universal-режим в configure. Архитектуру берём у самой библиотеки
+  # Homebrew, а не у оболочки: под Rosetta uname -m соврёт.
+  ARCH="$(lipo -archs "$(brew --prefix openssl@3)/lib/libssl.dylib" 2>/dev/null | awk '{print $1}')"
+  [ -n "$ARCH" ] || ARCH="$(uname -m)"
+  log "Целевая архитектура: $ARCH"
+
   log "Собираю PAPPL ($PAPPL_BRANCH) из исходников в $PAPPL_BUILD_DIR"
   rm -rf "$PAPPL_BUILD_DIR"
   git clone --depth 1 --branch "$PAPPL_BRANCH" https://github.com/michaelrsweet/pappl.git "$PAPPL_BUILD_DIR"
-  (cd "$PAPPL_BUILD_DIR" && ./configure --prefix="$PREFIX" --with-tls=openssl && make)
+  (cd "$PAPPL_BUILD_DIR" &&
+     ./configure --prefix="$PREFIX" --with-tls=openssl \
+                 CFLAGS="-arch $ARCH" LDFLAGS="-arch $ARCH" &&
+     make)
   sudo make -C "$PAPPL_BUILD_DIR" install
 fi
 
 log "Собираю драйвер"
 make -C "$SRC_DIR" test
-make -C "$SRC_DIR" app PAPPL_PREFIX="$PREFIX"
+make -C "$SRC_DIR" app PAPPL_PREFIX="$PREFIX" ${ARCH:+ARCH="$ARCH"}
 
 log "Устанавливаю в $PREFIX/bin"
 sudo make -C "$SRC_DIR" install PREFIX="$PREFIX"

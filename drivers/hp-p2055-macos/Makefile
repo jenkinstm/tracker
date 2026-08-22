@@ -7,6 +7,9 @@
 #   make filter    — CUPS-фильтр rastertop2055 (нужны заголовки CUPS)
 #   make install   — установка printer application в /usr/local (нужен sudo)
 #
+# На macOS сборка идёт под архитектуру текущей машины (ARCH=arm64 на M-серии);
+# переопределяется как make app ARCH=x86_64.
+#
 
 CC       ?= cc
 CFLAGS   ?= -O2 -g
@@ -28,8 +31,23 @@ PAPPL_CFLAGS ?= -I$(PAPPL_PREFIX)/include
 PAPPL_LIBS   ?= -L$(PAPPL_PREFIX)/lib -lpappl
 endif
 
-CUPS_CFLAGS  ?= $(shell cups-config --cflags 2>/dev/null)
-CUPS_LIBS    ?= $(shell cups-config --libs 2>/dev/null || echo -lcups)
+# Apple отдаёт через cups-config флаги universal-сборки. На Apple Silicon
+# срез x86_64 нечем слинковать: PAPPL и библиотеки Homebrew собраны только
+# под arm64, поэтому -arch из этих флагов вырезаем и ставим свой.
+CUPS_CFLAGS_RAW := $(shell cups-config --cflags 2>/dev/null)
+CUPS_LIBS_RAW   := $(shell cups-config --libs 2>/dev/null || echo -lcups)
+
+CUPS_CFLAGS  ?= $(shell printf '%s' '$(CUPS_CFLAGS_RAW)' | sed -E 's/-arch +[A-Za-z0-9_]+//g')
+CUPS_LIBS    ?= $(shell printf '%s' '$(CUPS_LIBS_RAW)' | sed -E 's/-arch +[A-Za-z0-9_]+//g')
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
+ARCH      ?= $(shell uname -m)
+ARCHFLAGS ?= -arch $(ARCH)
+else
+ARCHFLAGS ?=
+endif
 
 all: test
 
@@ -51,13 +69,13 @@ build/pcldump: tests/pcldump.c tests/pcl_decode.c tests/pcl_decode.h | build
 app: build/p2055-printer-app
 
 build/p2055-printer-app: src/p2055_pappl.c src/p2055_pcl.c src/p2055_pcl.h | build
-	$(CC) $(STD) $(CFLAGS) $(WARNINGS) -Isrc $(PAPPL_CFLAGS) $(CUPS_CFLAGS) \
+	$(CC) $(STD) $(CFLAGS) $(ARCHFLAGS) $(WARNINGS) -Isrc $(PAPPL_CFLAGS) $(CUPS_CFLAGS) \
 	    -o $@ src/p2055_pappl.c src/p2055_pcl.c $(PAPPL_LIBS) $(CUPS_LIBS) -lm
 
 filter: build/rastertop2055
 
 build/rastertop2055: src/rastertop2055.c src/p2055_pcl.c src/p2055_pcl.h | build
-	$(CC) $(STD) $(CFLAGS) $(WARNINGS) -Isrc $(CUPS_CFLAGS) \
+	$(CC) $(STD) $(CFLAGS) $(ARCHFLAGS) $(WARNINGS) -Isrc $(CUPS_CFLAGS) \
 	    -o $@ src/rastertop2055.c src/p2055_pcl.c $(CUPS_LIBS) -lm
 
 install: build/p2055-printer-app
