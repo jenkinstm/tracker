@@ -111,6 +111,7 @@ universal-набором.
 | `tests/pcl_decode.{c,h}` | декодер PCL обратно в растр (для тестов и pcldump) |
 | `tests/pcldump.c` | утилита разбора готового потока PCL |
 | `scripts/install-macos.sh` | установка на macOS |
+| `scripts/uninstall-macos.sh` | удаление очереди, сервиса и файлов |
 
 Ядро ничего не знает ни о CUPS, ни о PAPPL: на вход — однобитные строки растра,
 на выход — байты PCL. Поэтому один и тот же код работает в обоих фронтендах и
@@ -200,12 +201,34 @@ lpadmin -p P2055 -E -v socket://192.168.1.50 -P ppd/HP-LaserJet-P2055.ppd
 
 ## Удаление
 
+Принтер живёт в системе в двух местах: очередь CUPS (её видно в «Принтеры и
+сканеры») и принтер внутри printer application. Скрипт снимает оба и убирает
+за собой файлы:
+
 ```sh
+./scripts/uninstall-macos.sh          # спросит подтверждение и покажет список
+./scripts/uninstall-macos.sh --queue  # только очередь печати, сервис оставить
+```
+
+PAPPL, Homebrew и их пакеты скрипт не трогает — они могли попасть в систему не
+из-за драйвера.
+
+Вручную то же самое:
+
+```sh
+sudo lpadmin -x HP_LaserJet_P2055                     # очередь печати
+p2055-printer-app delete -d p2055                     # принтер в сервисе
+p2055-printer-app shutdown                            # остановить сервис
 launchctl bootout "gui/$(id -u)/ru.profkosm.p2055-printer-app"
 rm ~/Library/LaunchAgents/ru.profkosm.p2055-printer-app.plist
-sudo lpadmin -x HP_LaserJet_P2055
 sudo rm /usr/local/bin/p2055-printer-app
+rm -f  ~/Library/"Application Support"/p2055-printer-app.state
+rm -rf ~/Library/"Application Support"/p2055-printer-app
+rm -f  ~/Library/Logs/p2055-printer-app.log ~/Library/Logs/p2055-printer-app.err
 ```
+
+Если нужно просто пересоздать очередь (например, сменился адрес принтера),
+хватит первых двух команд — состояние сервиса и LaunchAgent можно оставить.
 
 ## Лицензия и происхождение
 
