@@ -1,14 +1,20 @@
-.PHONY: help up down logs migrate seed test lint fmt dev-install dev stop status
+.PHONY: help up down logs seed migrate test lint dev-install migrate-local seed-local dev stop status
 
 help:
-	@echo "up          — поднять весь стек в docker compose"
-	@echo "down        — остановить стек"
-	@echo "migrate     — накатить миграции"
-	@echo "seed        — демо-проект на 50 фраз (+ history для истории съёмов)"
-	@echo "test        — тесты бэкенда"
-	@echo "lint        — ruff и mypy"
-	@echo "dev-install — локальная установка без docker"
-	@echo "dev / stop / status — локальный запуск процессов"
+	@echo "— через docker compose —"
+	@echo "up           — поднять весь стек (миграции накатываются сами)"
+	@echo "down         — остановить стек"
+	@echo "logs         — логи всех сервисов"
+	@echo "seed         — демо-проект на 50 фраз с историей съёмов"
+	@echo "migrate      — накатить миграции вручную"
+	@echo ""
+	@echo "— без docker —"
+	@echo "dev-install  — venv для бэкенда и node_modules для фронтенда"
+	@echo "migrate-local / seed-local"
+	@echo "dev / stop / status — запуск, остановка и состояние процессов"
+	@echo ""
+	@echo "test         — тесты бэкенда"
+	@echo "lint         — ruff, mypy и tsc"
 
 up:
 	docker compose up -d --build
@@ -20,9 +26,15 @@ logs:
 	docker compose logs -f --tail=100
 
 migrate:
-	cd backend && .venv/bin/alembic upgrade head
+	docker compose exec api alembic upgrade head
 
 seed:
+	docker compose exec api python -m app.seed --history
+
+migrate-local:
+	cd backend && .venv/bin/alembic upgrade head
+
+seed-local:
 	cd backend && .venv/bin/python -m app.seed --history
 
 test:

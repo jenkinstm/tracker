@@ -49,8 +49,8 @@ cp .env.example .env
 # в .env замените хосты postgres/redis на localhost
 
 make dev-install          # venv для бэкенда, node_modules для фронтенда
-make migrate
-make seed
+make migrate-local
+make seed-local
 make dev                  # api :8000, worker, beat, frontend :3000
 make status               # что запущено
 make stop
