@@ -48,3 +48,9 @@ export const pluralize = (count: number, one: string, few: string, many: string)
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
   return many;
 };
+
+export const phrases = (count: number) =>
+  `${number(count)} ${pluralize(count, "фраза", "фразы", "фраз")}`;
+
+export const requests = (count: number) =>
+  `${number(count)} ${pluralize(count, "запрос", "запроса", "запросов")}`;

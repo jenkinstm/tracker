@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ErrorBox } from "@/components/ui";
 import { api } from "@/lib/api";
-import { dateTime, fullDate, rubles, runStatus } from "@/lib/format";
+import { dateTime, fullDate, phrases, requests, rubles, runStatus } from "@/lib/format";
 import type { AppConfig, Cost, Project, Run } from "@/lib/types";
 
 const STATUS_TONE: Record<string, string> = {
@@ -49,7 +49,7 @@ export function RunPanel({ project, config }: { project: Project; config?: AppCo
         <div className="text-sm font-medium">Съём позиций</div>
         {estimate.data ? (
           <p className="mt-1 text-sm text-muted">
-            {estimate.data.keywords} фраз → {estimate.data.requests} запросов к API,{" "}
+            {phrases(estimate.data.keywords)} → {requests(estimate.data.requests)} к API,{" "}
             <span className="font-medium text-ink">{rubles(estimate.data.cost_kopecks)}</span>{" "}
             {estimate.data.mode === "deferred" ? "(отложенный режим)" : "(синхронный режим)"}
           </p>

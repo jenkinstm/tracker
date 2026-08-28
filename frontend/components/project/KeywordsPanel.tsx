@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Empty, ErrorBox, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
-import { number, rubles } from "@/lib/format";
+import { number, requests, rubles } from "@/lib/format";
 import type { AppConfig, ImportReport, Keyword, Page, Project, WordstatCost } from "@/lib/types";
 
 export function KeywordsPanel({ project, config }: { project: Project; config?: AppConfig }) {
@@ -128,7 +128,7 @@ export function KeywordsPanel({ project, config }: { project: Project; config?: 
           {estimate.data ? (
             <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
               К сбору <b>{estimate.data.keywords}</b> из {estimate.data.total_selected} фраз,{" "}
-              {estimate.data.requests} запросов, {rubles(estimate.data.cost_kopecks)}.
+              {requests(estimate.data.requests)}, {rubles(estimate.data.cost_kopecks)}.
               {estimate.data.fresh_skipped > 0 ? (
                 <span className="block text-xs text-muted">
                   Пропущено как свежие: {estimate.data.fresh_skipped}.

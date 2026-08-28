@@ -11,7 +11,7 @@ import { RunPanel } from "@/components/project/RunPanel";
 import { VisibilityChart } from "@/components/project/VisibilityChart";
 import { ErrorBox, Spinner, Stat } from "@/components/ui";
 import { api, download } from "@/lib/api";
-import { fullDate, number } from "@/lib/format";
+import { fullDate, number, phrases } from "@/lib/format";
 import type { AppConfig, Group, Project, Report, Summary, VisibilityPoint } from "@/lib/types";
 
 type Tab = "report" | "keywords" | "runs";
@@ -134,7 +134,7 @@ function ReportTab({ projectId }: { projectId: string }) {
         <Stat
           label="Съём"
           value={fullDate(summary.data?.checked_on)}
-          hint={summary.data ? `${number(summary.data.keywords)} фраз` : undefined}
+          hint={summary.data ? phrases(summary.data.keywords) : undefined}
         />
         <Stat label="В ТОП-3" value={number(summary.data?.in_top3)} />
         <Stat label="В ТОП-10" value={number(summary.data?.in_top10)} />
