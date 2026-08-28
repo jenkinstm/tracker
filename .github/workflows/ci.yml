@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rankpulse
+          POSTGRES_PASSWORD: rankpulse
+          POSTGRES_DB: rankpulse
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rankpulse"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://rankpulse:rankpulse@localhost:5432/rankpulse
+      TEST_ADMIN_URL: postgresql+psycopg://rankpulse:rankpulse@localhost:5432/postgres
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: ci-secret-key-not-used-in-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Установка зависимостей
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Линт
+        working-directory: backend
+        run: ruff check app tests
+      - name: Типы
+        working-directory: backend
+        run: mypy app || true
+      - name: Миграции вверх и вниз
+        working-directory: backend
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+      - name: Тесты
+        working-directory: backend
+        run: pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Установка зависимостей
+        working-directory: frontend
+        run: npm install
+      - name: Типы
+        working-directory: frontend
+        run: npx tsc --noEmit
+      - name: Сборка
+        working-directory: frontend
+        run: npm run build
